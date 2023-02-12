@@ -1,15 +1,31 @@
 from datetime import datetime
+from django.contrib.auth import authenticate, login
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from api.serializers import *
 from rest_framework import viewsets, filters
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework import status
 
 
 # Create your views here.
+
+
+@api_view(['POST'])
+def login_api_view(request):
+    username = request.POST.get('username')
+    password = request.POST.get('password')
+    user = authenticate(username=username, password=password)
+    if user is not None:
+        login(request, user)
+        response = {
+            'message': "O usuário {} está logado!".format(user)
+        }
+        return Response(response, status=status.HTTP_200_OK)
+    else:
+        return Response(status=status.HTTP_403_FORBIDDEN)
 
 
 class ProdutosView(viewsets.ModelViewSet):
@@ -66,6 +82,7 @@ incrementar mais um no atributo 'qtd'.
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def add_item_to_cart(request, pk):
     user = request.user
     item = get_object_or_404(ProductsModel, pk=pk)
@@ -98,6 +115,7 @@ def add_item_to_cart(request, pk):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def remove_item_cart(request, pk):
     user = request.user
     item = get_object_or_404(ItensCart, pk=pk)
@@ -117,6 +135,7 @@ def remove_item_cart(request, pk):
 
 
 class ItensCartsView(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     serializer_class = ItensCartSerializer
 
     def get_queryset(self):
@@ -124,6 +143,7 @@ class ItensCartsView(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def checkout(request):
     user = request.user
     cart = CartsModel.objects.filter(ativo=True, user=user)
@@ -134,7 +154,10 @@ def checkout(request):
         order.value_addition = last_cart.ship_value()
         order.amount = last_cart.amount()
         order.status_order = 'finalizado'
-        order.checkout_date = datetime.now()
+        order.checkout_date = datetime.datetime.now()
+        order.save()
+        last_cart.ativo = False
+        last_cart.save()
         content = {
             'message': "Checkout realizado com sucesso"
         }
@@ -146,3 +169,12 @@ def checkout(request):
         }
 
         return Response(content, status=status.HTTP_400_BAD_REQUEST)
+
+
+class OrdersViews(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrdersSerializer
+
+    def get_queryset(self):
+        return OrderClients.objects.filter(client=self.request.user)
+

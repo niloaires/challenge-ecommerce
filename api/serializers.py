@@ -26,7 +26,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartsModel
-        fields = ['code', 'ativo',  'itens_cart', 'count_itens', 'amount_value', 'ship_value', 'amount']
+        fields = ['code', 'ativo', 'itens_cart', 'count_itens', 'amount_value', 'ship_value', 'amount']
 
     def get_count_itens(self, obj):
         return obj.count_itens()
@@ -42,6 +42,11 @@ class CartSerializer(serializers.ModelSerializer):
 
 
 class OrdersSerializer(serializers.ModelSerializer):
+    status_order = serializers.SerializerMethodField
+
     class Meta:
         model = OrderClients
         fields = '__all__'
+
+    def get_status_order(self, obj):
+        return obj.get_status_order_display

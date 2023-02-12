@@ -111,7 +111,4 @@ class OrderClients(models.Model):
         verbose_name_plural = 'Pedidos'
 
     def __str__(self):
-        return "{cliente} - {status} - {register_date} R$ {valor}".format(cliente=self.client.username,
-                                                                          status=self.get_status_order_display,
-                                                                          register_date=self.register_date,
-                                                                          valor=self.amount)
+        return "{}".format(self.cart)
